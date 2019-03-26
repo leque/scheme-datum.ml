@@ -1,0 +1,44 @@
+open Base
+open Rresult
+
+let () =
+  Stdio.print_endline "(* -*- mode: caml -*- *)";
+  Stdio.print_endline "(* generated automatically. DO NOT EDIT *)";
+  Stdio.print_endline "(* To update this file, you should run `dune runtest; dune promote`. *)";
+  Sys.argv
+  |> Array.to_list
+  |> List.tl
+  |> Option.value ~default:[]
+  |> List.iter ~f:begin fun fn ->
+    try
+      Stdio.In_channel.with_file fn
+        ~f:(fun in_ch ->
+            let lexbuf = Sedlexing.Utf8.from_channel in_ch in
+            Sedlexing.set_filename lexbuf fn;
+            Stdio.printf "\n(* %s *)\n" fn;
+            let rec loop () =
+              match SchemeDatum.read lexbuf with
+              | Ok s ->
+                s
+                |> SchemeDatum.show
+                |> Stdio.print_endline;
+                loop ()
+              | Error #SchemeDatum.eof ->
+                ()
+              | Error (#SchemeDatum.lexical_error as e) ->
+                e
+                |> SchemeDatum.show_lexical_error
+                |> Stdio.print_endline;
+                loop ()
+              | Error (#SchemeDatum.parse_error as e) ->
+                e
+                |> SchemeDatum.show_parse_error
+                |> Stdio.print_endline;
+                loop ()
+            in loop ()
+          )
+    with
+    | e ->
+      Stdio.eprintf "%s: parse error: %s\n" Sys.argv.(0) @@ Exn.to_string e;
+      Caml.exit 1
+  end

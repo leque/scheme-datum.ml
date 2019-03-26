@@ -1,0 +1,16 @@
+(rule
+ (targets parser.output)
+ (deps
+   "test.scm"
+ )
+ (action
+  (with-stdout-to parser.output (run ./test.exe %{deps}))))
+
+(alias
+ (name runtest)
+ (action (diff parser.expected parser.output)))
+
+(executable
+ (name test)
+ (libraries scheme-datum sedlex base stdio rresult)
+ (preprocess (pps ppx_deriving.show)))

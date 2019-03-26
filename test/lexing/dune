@@ -1,0 +1,23 @@
+(rule
+ (targets lexer.output)
+ (deps
+   "test.scm"
+   "boolean.scm"
+   "char.scm"
+   "integer.scm"
+   "string.scm"
+   "symbol.scm"
+   "unclosed-comment.scm"
+   "unclosed-nested-comment.scm"
+ )
+ (action
+  (with-stdout-to lexer.output (run ./test.exe %{deps}))))
+
+(alias
+ (name runtest)
+ (action (diff lexer.expected lexer.output)))
+
+(executable
+ (name test)
+ (libraries scheme-datum sedlex base stdio)
+ (preprocess (pps ppx_deriving.show)))

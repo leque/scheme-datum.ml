@@ -1,0 +1,17 @@
+(* -*- mode: caml -*- *)
+(* generated automatically. DO NOT EDIT *)
+(* To update this file, you should run `dune runtest; dune promote`. *)
+
+(* test.scm *)
+`List ([`Symbol ("define"); `List ([`Symbol ("fact"); `Symbol ("n")]);
+         `List ([`Symbol ("if");
+                  `List ([`Symbol ("="); `Symbol ("n"); `Integer10 ("0")]);
+                  `Integer10 ("1");
+                  `List ([`Symbol ("*"); `Symbol ("n");
+                           `List ([`Symbol ("fact");
+                                    `List ([`Symbol ("-"); `Symbol ("n");
+                                             `Integer10 ("1")])
+                                    ])
+                           ])
+                  ])
+         ])

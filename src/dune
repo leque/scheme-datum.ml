@@ -1,0 +1,12 @@
+(library
+ (name schemeDatum)
+ (public_name scheme-datum)
+ (flags (-w -3 -bin-annot -thread))
+ (libraries base
+            sedlex
+            )
+ (preprocess (pps
+               sedlex.ppx
+               ppx_deriving.show
+              ))
+ )
