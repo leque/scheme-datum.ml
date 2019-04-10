@@ -24,7 +24,6 @@
 #\xff
 #\x ff
 #\x(ff)
-;; TODO error
 #\x(x)
 #\(x
 #\((x)
