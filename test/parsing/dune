@@ -12,5 +12,5 @@
 
 (executable
  (name test)
- (libraries scheme-datum sedlex base stdio rresult)
+ (libraries scheme-datum sedlex base stdio)
  (preprocess (pps ppx_deriving.show)))

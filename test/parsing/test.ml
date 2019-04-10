@@ -1,5 +1,4 @@
 open Base
-open Rresult
 
 let () =
   Stdio.print_endline "(* -*- mode: caml -*- *)";
