@@ -19,8 +19,10 @@
 (* boolean.scm:5:1-5:7 *)
 `Boolean (true)
 (* boolean.scm:6:1-6:6 *)
-`LexicalError ("unexpected token: #t123"
-(* boolean.scm:7:1-7:6 *))
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* boolean.scm:7:3-7:3 *))
+`Integer10 ("123")
+(* boolean.scm:7:3-7:6 *)
 
 (* char.scm *)
 `Char (U+0041)
@@ -95,8 +97,8 @@
 (* char.scm:28:5-28:6 *)
 `Close
 (* char.scm:28:6-28:7 *)
-`Char (U+0000)
-(* char.scm:29:1-29:4 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* char.scm:29:4-29:4 *))
 `Symbol ("x")
 (* char.scm:29:4-29:5 *)
 `Char (U+0000)
@@ -211,3 +213,45 @@
 (* unclosed-nested-comment.scm *)
 `LexicalError ("unclosed comment"
 (* unclosed-nested-comment.scm:1:1-4:1 *))
+
+(* non-delim.scm *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:1:4-1:4 *))
+`NamedChar ("newline")
+(* non-delim.scm:1:4-1:13 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:2:2-2:2 *))
+`Boolean (true)
+(* non-delim.scm:2:2-2:4 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:3:4-3:4 *))
+`Symbol ("zzz")
+(* non-delim.scm:3:4-3:7 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:4:6-4:6 *))
+`Integer10 ("333")
+(* non-delim.scm:4:6-4:9 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:5:6-5:6 *))
+`Integer10 ("8")
+(* non-delim.scm:5:6-5:7 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:6:7-6:7 *))
+`Symbol ("x")
+(* non-delim.scm:6:7-6:8 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:7:4-7:4 *))
+`Symbol ("x")
+(* non-delim.scm:7:4-7:5 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:8:8-8:8 *))
+`Boolean (true)
+(* non-delim.scm:8:8-8:10 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:9:3-9:3 *))
+`Symbol ("zzz")
+(* non-delim.scm:9:3-9:6 *)
+`LexicalError ("identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+(* non-delim.scm:10:3-10:3 *))
+`Symbol ("alze")
+(* non-delim.scm:10:3-10:7 *)

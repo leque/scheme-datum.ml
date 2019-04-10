@@ -1,0 +1,10 @@
+abc#\newline
+.#t
+123zzz
+#b011333
+#o6448
+#xcafex
+#\(x
+#\xcafe#t
+#tzzz
+#falze

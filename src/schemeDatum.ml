@@ -272,27 +272,36 @@ let flonum = [%sedlex.regexp?
     | Plus digit10, ".", Star digit10, Opt exp
     )]
 
+let delimiter = [%sedlex.regexp? white_space | "|" | "(" | ")" | "\"" | ";"]
+
+let require_delimiter lexbuf res =
+  let open Result.Monad_infix in
+  Sedlexing.start lexbuf;
+  let r =
+    res >>= fun res ->
+    match %sedlex lexbuf with
+      | delimiter | eof ->
+        Result.return res
+      | _ ->
+        fail_lexical_error ~lexbuf
+          "identifier, dot, numbers, characters, and booleans should be terminated by delimiter"
+  in
+  Sedlexing.rollback lexbuf;
+  r
+
 let rec read_token lexbuf : (token With_position.t, _) Result.t =
   match %sedlex lexbuf with
   (* boolean *)
-  | "#", _t, Star subsequent ->
-    begin match String.lowercase @@ Lex.lexeme lexbuf with
-      | "#t" | "#true" ->
-        `Boolean true
-        |> add_position ~lexbuf
-        |> Result.return
-      | tok ->
-        fail_lexical_errorf ~lexbuf "unexpected token: %s" tok
-    end
-  | "#", _f, Star subsequent ->
-    begin match String.lowercase @@ Lex.lexeme lexbuf with
-      | "#f" | "#false" ->
-        `Boolean false
-        |> add_position ~lexbuf
-        |> Result.return
-      | tok ->
-        fail_lexical_errorf ~lexbuf "unexpected token: %s" tok
-    end
+  | "#", _t, Opt (_r, _u, _e) ->
+    `Boolean true
+    |> add_position ~lexbuf
+    |> Result.return
+    |> require_delimiter lexbuf
+  | "#", _f, Opt (_a, _l, _s, _e) ->
+    `Boolean false
+    |> add_position ~lexbuf
+    |> Result.return
+    |> require_delimiter lexbuf
   (* number *)
   | "#", _b ->
     let start, _ = Sedlexing.lexing_positions lexbuf in
@@ -301,6 +310,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         `Integer2 (Lex.lexeme lexbuf)
         |> add_position ~lexbuf
         |> Result.return
+        |> require_delimiter lexbuf
       | _ ->
         fail_lexical_error ~start ~lexbuf "unexpected input while reading Integer2"
     end
@@ -311,6 +321,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         `Integer8 (Lex.lexeme lexbuf)
         |> add_position ~lexbuf
         |> Result.return
+        |> require_delimiter lexbuf
       | _ ->
         fail_lexical_error ~start ~lexbuf "unexpected input while reading Integer8"
     end
@@ -321,6 +332,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         `Integer16 (Lex.lexeme lexbuf)
         |> add_position ~lexbuf
         |> Result.return
+        |> require_delimiter lexbuf
       | _ ->
         fail_lexical_error ~start ~lexbuf "unexpected input while reading Integer16"
     end
@@ -331,10 +343,12 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         `Integer10 (Lex.lexeme lexbuf)
         |> add_position ~lexbuf
         |> Result.return
+        |> require_delimiter lexbuf
       | sign, flonum ->
         `Number (Lex.lexeme lexbuf)
         |> add_position ~lexbuf
         |> Result.return
+        |> require_delimiter lexbuf
       | _ ->
         fail_lexical_error ~start ~lexbuf "unexpected input while reading Number"
     end
@@ -342,10 +356,12 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     `Integer10 (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
     |> Result.return
+    |> require_delimiter lexbuf
   | sign, flonum ->
     `Number (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
     |> Result.return
+    |> require_delimiter lexbuf
   (* character *)
   | "#\\" ->
     let start, _ = Sedlexing.lexing_positions lexbuf in
@@ -354,16 +370,19 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         let x = String.drop_prefix (Lex.lexeme lexbuf) 1 in
         uchar_of_hex ~start ~lexbuf x
         |> Result.map ~f:(fun c -> add_position ~start ~lexbuf @@ `Char c)
+        |> require_delimiter lexbuf
       | initial, Plus subsequent ->
         `NamedChar (Lex.lexeme lexbuf )
         |> add_position ~start ~lexbuf
         |> Result.return
+        |> require_delimiter lexbuf
       | any ->
         let pos = Sedlexing.lexeme_start lexbuf + 2 in
         let ch = Sedlexing.lexeme_char lexbuf pos in
         `Char ch
         |> add_position ~start ~lexbuf
         |> Result.return
+        |> require_delimiter lexbuf
       | _ -> assert false
     end
   (* string *)
@@ -380,10 +399,12 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     `Symbol (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
     |> Result.return
+    |> require_delimiter lexbuf
   | peculiar_identifier ->
     `Symbol (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
     |> Result.return
+    |> require_delimiter lexbuf
   (* comment*)
   | "#|" ->
     let buf = Buffer.create 16 in
@@ -419,6 +440,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     `Dot
     |> add_position ~lexbuf
     |> Result.return
+    |> require_delimiter lexbuf
   (* abbreviation *)
   | "'" ->
     `Quote
