@@ -367,7 +367,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     let start, _ = Sedlexing.lexing_positions lexbuf in
     begin match %sedlex lexbuf with
       | _x, Plus hex_digit ->
-        let x = String.drop_prefix (Lex.lexeme lexbuf) 1 in
+        let x = Lex.sub_lexeme lexbuf 1 (Sedlexing.lexeme_length lexbuf - 1) in
         uchar_of_hex ~start ~lexbuf x
         |> Result.map ~f:(fun c -> add_position ~start ~lexbuf @@ `Char c)
         |> require_delimiter lexbuf
@@ -411,7 +411,8 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     let start, _ = Sedlexing.lexing_positions lexbuf in
     comment start buf lexbuf 1
   | ";", Star (Compl (Chars "\r\n")), (line_ending | eof) ->
-    `LineComment (String.drop_prefix (Lex.lexeme lexbuf) 1)
+    let c = Lex.sub_lexeme lexbuf 1 (Sedlexing.lexeme_length lexbuf - 1) in
+    `LineComment c
     |> add_position ~lexbuf
     |> Result.return
   | "#;" ->
