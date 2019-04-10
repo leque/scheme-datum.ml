@@ -377,8 +377,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         |> Result.return
         |> require_delimiter lexbuf
       | any ->
-        let pos = Sedlexing.lexeme_start lexbuf + 2 in
-        let ch = Sedlexing.lexeme_char lexbuf pos in
+        let ch = Sedlexing.lexeme_char lexbuf 0 in
         `Char ch
         |> add_position ~start ~lexbuf
         |> Result.return
