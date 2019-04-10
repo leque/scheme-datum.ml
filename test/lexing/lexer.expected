@@ -127,10 +127,22 @@
 (* integer.scm:5:1-5:5 *)
 `Integer10 ("4096")
 (* integer.scm:6:3-6:7 *)
-`LexicalError ("unexpected input while reading Integer16"
+`LexicalError ("unexpected input while reading `Integer16"
 (* integer.scm:8:1-8:3 *))
 `Symbol ("z")
 (* integer.scm:8:3-8:4 *)
+`LexicalError ("unexpected input while reading `Integer8"
+(* integer.scm:9:1-9:3 *))
+`Symbol ("z")
+(* integer.scm:9:3-9:4 *)
+`LexicalError ("unexpected input while reading `Integer2"
+(* integer.scm:10:1-10:3 *))
+`Symbol ("z")
+(* integer.scm:10:3-10:4 *)
+`LexicalError ("unexpected input while reading `Number"
+(* integer.scm:11:1-11:3 *))
+`Symbol ("z")
+(* integer.scm:11:3-11:4 *)
 
 (* string.scm *)
 `String ("abc")

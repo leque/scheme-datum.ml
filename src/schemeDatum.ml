@@ -312,7 +312,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
-        fail_lexical_error ~start ~lexbuf "unexpected input while reading Integer2"
+        fail_lexical_error ~start ~lexbuf "unexpected input while reading `Integer2"
     end
   | "#", _o ->
     let start, _ = Sedlexing.lexing_positions lexbuf in
@@ -323,7 +323,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
-        fail_lexical_error ~start ~lexbuf "unexpected input while reading Integer8"
+        fail_lexical_error ~start ~lexbuf "unexpected input while reading `Integer8"
     end
   | "#", _x ->
     let start, _ = Sedlexing.lexing_positions lexbuf in
@@ -334,7 +334,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
-        fail_lexical_error ~start ~lexbuf "unexpected input while reading Integer16"
+        fail_lexical_error ~start ~lexbuf "unexpected input while reading `Integer16"
     end
   | "#", _d ->
     let start, _ = Sedlexing.lexing_positions lexbuf in
@@ -350,7 +350,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
-        fail_lexical_error ~start ~lexbuf "unexpected input while reading Number"
+        fail_lexical_error ~start ~lexbuf "unexpected input while reading `Number"
     end
   | sign, Plus digit10 ->
     `Integer10 (Lex.lexeme lexbuf)
