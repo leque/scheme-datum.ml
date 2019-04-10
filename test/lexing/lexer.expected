@@ -175,10 +175,12 @@
 (* string.scm:15:1-16:5 *)
 `String ("\"")
 (* string.scm:17:1-17:5 *)
-`LexicalError ("unexpected escape sequence in string: \\\\|"
+`LexicalError ("unrecognized escape sequence in string: \\|"
 (* string.scm:18:1-18:4 *))
+`LexicalError ("unrecognized escape sequence in string: \\z"
+(* string.scm:19:1-19:4 *))
 `LexicalError ("unclosed string"
-(* string.scm:20:1-21:1 *))
+(* string.scm:21:1-22:1 *))
 
 (* symbol.scm *)
 `Symbol ("abc")
@@ -211,10 +213,12 @@
 (* symbol.scm:15:1-16:5 *)
 `Symbol ("|")
 (* symbol.scm:17:1-17:5 *)
-`LexicalError ("unexpected escape sequence in symbol: \\\\\""
+`LexicalError ("unrecognized escape sequence in symbol: \\\""
 (* symbol.scm:18:1-18:4 *))
+`LexicalError ("unrecognized escape sequence in symbol: \\z"
+(* symbol.scm:19:1-19:4 *))
 `LexicalError ("unclosed symbol"
-(* symbol.scm:20:1-21:1 *))
+(* symbol.scm:21:1-22:1 *))
 
 (* unclosed-comment.scm *)
 `LexicalError ("unclosed comment"

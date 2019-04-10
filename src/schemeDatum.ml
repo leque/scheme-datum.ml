@@ -538,7 +538,7 @@ and quoted what cont start buf lexbuf =
     cont start buf lexbuf
   | "\\", any ->
     let r = fail_lexical_errorf ~start ~lexbuf
-        "unexpected escape sequence in %s: \\%s" what (Lex.lexeme lexbuf)
+        "unrecognized escape sequence in %s: %s" what (Lex.lexeme lexbuf)
     in
     recover (cont start buf) lexbuf;
     r

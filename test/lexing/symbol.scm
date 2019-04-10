@@ -16,5 +16,6 @@ bc|
  bc|
 |\||
 |\"|
+|\z|
 
 |lorem ipsum
