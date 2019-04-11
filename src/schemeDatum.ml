@@ -98,9 +98,6 @@ let make_lexical_error ?start ~lexbuf msg : [> lexical_error] =
   let start = Option.value ~default:b_ start in
   `LexicalError { value = msg; start; end_ }
 
-let fail_lexical_error_of_msg ?start ~lexbuf (`Msg s) =
-  make_lexical_error ?start ~lexbuf s
-
 let fail_lexical_error ?start ~lexbuf msg =
   make_lexical_error ?start ~lexbuf msg
   |> Result.fail
@@ -577,9 +574,9 @@ and comment start buf lexbuf level =
     assert false
 and recover f lexbuf =
   match f lexbuf with
-  | Ok t ->
+  | Ok _ ->
     ()
-  | Error e ->
+  | Error _ ->
     recover f lexbuf
 
 type 'a tokenizer = unit -> (token With_position.t, 'a) Result.t
@@ -600,7 +597,7 @@ let parse_bytevector_element (v : t_with_position) =
     f ~start ~end_ s
   | { value = `Integer16 s; start; end_ } ->
     f ~start ~end_ ("0x" ^ s)
-  | { value; start; end_ } ->
+  | { value = _; start; end_ } ->
     fail_parse_error ~start ~end_ "not a byte"
 
 let list_to_bytevector ~start ~end_ vs =
@@ -635,9 +632,9 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
     in
     r >>= fun c ->
     Result.return { With_position.value = `Char c; start; end_ }
-  | { value = `LineComment s; _ } as v ->
+  | { value = `LineComment _; _ } as v ->
     parse0 ~left:(v::left) tokenize
-  | { value = `BlockComment s; _ } as v ->
+  | { value = `BlockComment _; _ } as v ->
     parse0 ~left:(v::left) tokenize
   | { value = `Whitespace _; _ } as v ->
     parse0 ~left:(v::left) tokenize
@@ -666,7 +663,7 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
   | { value = `OpenV; start; _ } ->
     list ~what:"vector" ~allows_dot:false ~start [] tokenize
     >>= begin function
-      | _, Some v, end_ ->
+      | _, Some _, end_ ->
         fail_parse_error ~start ~end_ "invalid dotted-tail for vector"
       | vs, None, end_ ->
         let value = `Vector (Array.of_list vs) in
@@ -675,7 +672,7 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
   | { value = `OpenBv; start; _ } ->
     list ~what:"bytevector" ~allows_dot:false ~start [] tokenize
     >>= begin function
-      | _, Some v, end_ ->
+      | _, Some _, end_ ->
         fail_parse_error ~start ~end_ "invalid dotted-tail for bytevector"
       | vs, None, end_ ->
         list_to_bytevector ~start ~end_ vs
