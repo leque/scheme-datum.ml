@@ -122,6 +122,7 @@ let fail_parse_errorf ~start ~end_ fmt =
   Printf.ksprintf (fail_parse_error ~start ~end_) fmt
 
 type eof = [`Eof of string With_position.t]
+[@@deriving show]
 
 let make_eof ~start ~end_ msg : [> eof] =
   `Eof { With_position.value = msg; start; end_ }
