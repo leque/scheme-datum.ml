@@ -163,7 +163,7 @@ let char_escapes =
 
 let uchar_of_hex ~start ~lexbuf s =
   let ss = "0x" ^ s in
-  match int_of_string ss |> Uchar.of_scalar with
+  match Int.of_string ss |> Uchar.of_scalar with
   | Some v -> Result.return v
   | None ->
     fail_lexical_errorf ~start ~lexbuf "invalid unicode scalar value: %s" ss
@@ -586,7 +586,7 @@ type 'a tokenizer = unit -> (token With_position.t, 'a) Result.t
 
 let parse_bytevector_element (v : t_with_position) =
   let f ~start ~end_ s =
-    match Char.of_int @@ int_of_string s with
+    match Char.of_int @@ Int.of_string s with
     | Some v -> Result.return v
     | None -> fail_parse_errorf ~start ~end_ "integer out of byte range: %s" s
     | exception Failure _ -> fail_parse_errorf ~start ~end_ "integer out of byte range: %s" s
