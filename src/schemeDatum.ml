@@ -139,7 +139,7 @@ let uchar_return = Uchar.of_char '\x0D'
 let uchar_space = Uchar.of_char '\x07'
 let uchar_tab = Uchar.of_char '\x09'
 
-let char_names =
+let name_chars =
   [ "alarm", uchar_alarm
   ; "backspace", uchar_backspace
   ; "delete", uchar_delete
@@ -151,7 +151,9 @@ let char_names =
   ; "tab", uchar_tab
   ]
 
-let char_escapes =
+let char_names = List.Assoc.inverse name_chars
+
+let mnemonic_chars =
   [ "a", uchar_alarm
   ; "b", uchar_backspace
   ; "t", uchar_tab
@@ -159,20 +161,14 @@ let char_escapes =
   ; "r", uchar_return
   ]
 
+let char_mnemonics = List.Assoc.inverse mnemonic_chars
+
 let uchar_of_hex ~start ~lexbuf s =
   let ss = "0x" ^ s in
   match Int.of_string ss |> Uchar.of_scalar with
   | Some v -> Result.return v
   | None ->
     fail_lexical_errorf ~start ~lexbuf "invalid unicode scalar value: %s" ss
-
-let uchar_of_mnemonic_escape = function
-  | "\\a" -> uchar_alarm
-  | "\\b" -> uchar_backspace
-  | "\\t" -> uchar_tab
-  | "\\n" -> uchar_newline
-  | "\\r" -> uchar_return
-  | s -> Printf.failwithf "unknown mnemonic escape: %s" s ()
 
 module Lex = Sedlexing.Utf8
 
@@ -184,22 +180,6 @@ let add_position ?start ~lexbuf value =
 let tap f x =
   let () = f x in
   x
-
-let list_assoc ~equal x ys =
-  List.find_map ~f:(fun (k, v) ->
-      if equal x k then
-        Some v
-      else
-        None)
-    ys
-
-let list_rev_assoc ~equal x ys =
-  List.find_map ~f:(fun (k, v) ->
-      if equal x v then
-        Some k
-      else
-        None)
-    ys
 
 let _a = [%sedlex.regexp? Chars "Aa"]
 let _b = [%sedlex.regexp? Chars "Bb"]
@@ -526,8 +506,8 @@ and quoted what cont start buf lexbuf =
         r
     end
   | mnemonic_escape ->
-    Lex.lexeme lexbuf
-    |> uchar_of_mnemonic_escape
+    Lex.sub_lexeme lexbuf 1 1
+    |> List.Assoc.find_exn ~equal:String.equal mnemonic_chars
     |> Caml.Buffer.add_utf_8_uchar buf;
     cont start buf lexbuf
   | escaped_space ->
@@ -626,8 +606,9 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
     Result.return v
   | { value = `NamedChar c; start; end_ } ->
     let r =
-      list_assoc ~equal:String.equal c char_names
-      |> Result.of_option ~error:(make_parse_errorf ~start ~end_ "unknown character named %s" c)
+      List.Assoc.find ~equal:String.equal name_chars c
+      |> Result.of_option
+        ~error:(make_parse_errorf ~start ~end_ "unknown character named %s" c)
     in
     r >>= fun c ->
     Result.return { With_position.value = `Char c; start; end_ }
@@ -757,17 +738,12 @@ let write_quoted ~quote buf v =
   let putc c = Caml.Buffer.add_utf_8_uchar buf c in
   let putf fmt = Printf.ksprintf puts fmt in
   let lexbuf = Sedlexing.Utf8.from_string v in
-  let lexeme_char b =
-    let cs = Sedlexing.lexeme b in
-    assert (Array.length cs = 1);
-    cs.(0)
-  in
   let rec loop () =
     match %sedlex lexbuf with
     | eof -> ()
     | cc ->
-      let c = lexeme_char lexbuf in
-      begin match list_rev_assoc ~equal:Uchar.equal c char_escapes with
+      let c = Sedlexing.lexeme_char lexbuf 0 in
+      begin match List.Assoc.find ~equal:Uchar.equal char_mnemonics c with
       | Some s ->
         puts "\\";
         puts s
@@ -776,7 +752,7 @@ let write_quoted ~quote buf v =
       end;
       loop ()
     | any ->
-      let c = lexeme_char lexbuf in
+      let c = Sedlexing.lexeme_char lexbuf 0 in
       if Uchar.equal c quote then begin
         puts "\\"
       end;
@@ -814,7 +790,7 @@ let write_token : token -> string = function
   | `Number s ->
      s
   | `Char c ->
-    begin match list_rev_assoc ~equal:Uchar.equal c char_names with
+    begin match List.Assoc.find ~equal:Uchar.equal char_names c with
     | Some s ->
       Printf.sprintf "#\\%s" s
     | None ->
