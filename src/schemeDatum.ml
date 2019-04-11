@@ -1,4 +1,5 @@
 open! Base
+module Format = Caml.Format
 
 module With_position = struct
   type 'a t =
