@@ -1,7 +1,7 @@
 (library
  (name schemeDatum)
  (public_name scheme-datum)
- (flags (-w -3 -bin-annot -thread))
+ (flags :standard -w +A-4-9-40-42-48 -safe-string)
  (libraries base
             sedlex
             )

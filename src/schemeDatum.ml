@@ -1,4 +1,4 @@
-open Base
+open! Base
 
 module With_position = struct
   type 'a t =
@@ -763,7 +763,7 @@ let write_quoted ~quote buf v =
   let lexbuf = Sedlexing.Utf8.from_string v in
   let lexeme_char b =
     let cs = Sedlexing.lexeme b in
-    assert (Array.length cs == 1);
+    assert (Array.length cs = 1);
     cs.(0)
   in
   let rec loop () =
