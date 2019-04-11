@@ -244,8 +244,8 @@ let white_space = [%sedlex.regexp? intraline_whitespace | line_ending]
 let hex_digit = [%sedlex.regexp? digit16]
 let hex_escape = [%sedlex.regexp? "\\", _x, Plus hex_digit, ";"]
 let mnemonic_escape = [%sedlex.regexp? "\\", Chars "abtnr"]
-let escaped_space =
-  [%sedlex.regexp? "\\", Star intraline_whitespace, line_ending, Star intraline_whitespace]
+let escaped_space = [%sedlex.regexp?
+    ("\\", Star intraline_whitespace, line_ending, Star intraline_whitespace)]
 
 let digit = [%sedlex.regexp? digit10]
 let letter = [%sedlex.regexp? 'a' .. 'z' | 'A' .. 'Z']
@@ -255,14 +255,12 @@ let special_subsequent = [%sedlex.regexp? explicit_sign | "." | "@"]
 let subsequent = [%sedlex.regexp? initial | digit | special_subsequent]
 let sign_subsequent = [%sedlex.regexp? initial | explicit_sign | "@"]
 let dot_subsequent = [%sedlex.regexp? sign_subsequent | "."]
-let peculiar_identifier =
-  [%sedlex.regexp?
-      ( explicit_sign
-      | explicit_sign, sign_subsequent, Star subsequent
-      | explicit_sign, ".", dot_subsequent, Star subsequent
-      | ".", dot_subsequent, Star subsequent
-      )
-  ]
+let peculiar_identifier = [%sedlex.regexp?
+    ( explicit_sign
+    | explicit_sign, sign_subsequent, Star subsequent
+    | explicit_sign, ".", dot_subsequent, Star subsequent
+    | ".", dot_subsequent, Star subsequent
+    )]
 
 let flonum = [%sedlex.regexp?
     ( Plus digit10, exp
@@ -801,8 +799,10 @@ let write_symbol buf v =
     write_quoted ~quote:uchar_bar buf v
 
 let write_token : token -> string = function
-  | `Boolean b ->
-    if b then "#t" else "#f"
+  | `Boolean true ->
+    "#t"
+  | `Boolean false ->
+    "#f"
   | `Integer2 s ->
      "#b" ^ s
   | `Integer8 s ->
