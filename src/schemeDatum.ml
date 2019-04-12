@@ -285,7 +285,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     begin match %sedlex lexbuf with
       | sign, Plus digit2 ->
         `Integer2 (Lex.lexeme lexbuf)
-        |> add_position ~lexbuf
+        |> add_position ~start ~lexbuf
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
@@ -296,7 +296,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     begin match %sedlex lexbuf with
       | sign, Plus digit8 ->
         `Integer8 (Lex.lexeme lexbuf)
-        |> add_position ~lexbuf
+        |> add_position ~start ~lexbuf
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
@@ -307,7 +307,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     begin match %sedlex lexbuf with
       | sign, Plus digit16 ->
         `Integer16 (Lex.lexeme lexbuf)
-        |> add_position ~lexbuf
+        |> add_position ~start ~lexbuf
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
@@ -318,12 +318,12 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     begin match %sedlex lexbuf with
       | sign, Plus digit10 ->
         `Integer10 (Lex.lexeme lexbuf)
-        |> add_position ~lexbuf
+        |> add_position ~start ~lexbuf
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | sign, flonum ->
         `Number (Lex.lexeme lexbuf)
-        |> add_position ~lexbuf
+        |> add_position ~start ~lexbuf
         |> Result.return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
