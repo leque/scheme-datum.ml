@@ -2,6 +2,7 @@
  (targets parser.output)
  (deps
    "test.scm"
+   "list.scm"
  )
  (action
   (with-stdout-to parser.output (run ./test.exe %{deps}))))

@@ -637,6 +637,12 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
         | vs, None, end_ ->
           let value = `List vs in
           { With_position.value; start; end_ }
+        | vs, Some { With_position.value = `List ys; _ }, end_ ->
+          let value = `List (vs @ ys) in
+          { With_position.value; start; end_ }
+        | vs, Some { With_position.value = `DottedList(ys, t); _ }, end_ ->
+          let value = `DottedList (vs @ ys, t) in
+          { With_position.value; start; end_ }
         | vs, Some t, end_ ->
           let value = `DottedList (vs, t) in
           { With_position.value; start; end_ }

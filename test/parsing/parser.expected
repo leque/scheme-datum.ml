@@ -15,3 +15,10 @@
                            ])
                   ])
          ])
+
+(* list.scm *)
+`List ([`Integer10 ("1"); `Integer10 ("2"); `Integer10 ("3")])
+`List ([`Integer10 ("1"); `Integer10 ("2"); `Integer10 ("3")])
+`DottedList (([`Integer10 ("1"); `Integer10 ("2")], `Integer10 ("3")))
+`DottedList (([`Integer10 ("1"); `Integer10 ("2"); `Integer10 ("3")],
+              `Integer10 ("4")))
