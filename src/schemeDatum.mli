@@ -79,12 +79,12 @@ type t =
   [@@deriving show]
 
 type t_with_position =
-    ([ lexeme_datum
-     | `Bytevector of Bytes.t
-     | `DottedList of 'a With_position.t list * 'a With_position.t
-     | `List of 'a With_position.t list
-     | `Vector of 'a With_position.t array
-     ] as 'a) With_position.t
+    [ lexeme_datum
+    | `Bytevector of Bytes.t
+    | `DottedList of t_with_position list * t_with_position
+    | `List of t_with_position list
+    | `Vector of t_with_position array
+    ] With_position.t
 
 (** {1 Errors} *)
 
