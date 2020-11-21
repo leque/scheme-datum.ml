@@ -14,8 +14,8 @@
  (action
   (with-stdout-to lexer.output (run ./test.exe %{deps}))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff lexer.expected lexer.output)))
 
 (executable
