@@ -501,20 +501,20 @@ and quoted what cont start buf lexbuf =
             h
             |> uchar_of_hex ~start:xstart ~lexbuf
             |> tap (Result.iter_error ~f:(fun _ ->
-                recover (cont start buf) lexbuf))
+                recover_lexical_state (cont start buf) lexbuf))
             |> Result.bind ~f:(fun s ->
                 Caml.Buffer.add_utf_8_uchar buf s;
                 cont start buf lexbuf)
           | _ ->
             let r = fail_lexical_errorf ~start:xstart ~lexbuf
                 "unterminated hex_escape in %s" what in
-            recover (cont start buf) lexbuf;
+            recover_lexical_state (cont start buf) lexbuf;
             r
         end
       | _ ->
         let r = fail_lexical_errorf ~start ~lexbuf
             "invalid hex_escape in %s" what in
-        recover (cont start buf) lexbuf;
+        recover_lexical_state (cont start buf) lexbuf;
         r
     end
   | mnemonic_escape ->
@@ -528,7 +528,7 @@ and quoted what cont start buf lexbuf =
     let r = fail_lexical_errorf ~start ~lexbuf
         "unrecognized escape sequence in %s: %s" what (Lex.lexeme lexbuf)
     in
-    recover (cont start buf) lexbuf;
+    recover_lexical_state (cont start buf) lexbuf;
     r
   | eof ->
     fail_lexical_errorf ~start ~lexbuf "unclosed %s" what
@@ -536,7 +536,7 @@ and quoted what cont start buf lexbuf =
     let r = fail_lexical_errorf ~start ~lexbuf
         "unexpected char in %s: %s" what (Lex.lexeme lexbuf)
     in
-    recover (cont start buf) lexbuf;
+    recover_lexical_state (cont start buf) lexbuf;
     r
   | _ -> assert false
 and comment start buf lexbuf level =
@@ -563,12 +563,12 @@ and comment start buf lexbuf level =
     fail_lexical_error ~start ~lexbuf "unclosed comment"
   | _ ->
     assert false
-and recover f lexbuf =
+and recover_lexical_state f lexbuf =
   match f lexbuf with
   | Ok _ ->
     ()
   | Error _ ->
-    recover f lexbuf
+    recover_lexical_state f lexbuf
 
 type 'a tokenizer = unit -> (token With_position.t, 'a) Result.t
 
