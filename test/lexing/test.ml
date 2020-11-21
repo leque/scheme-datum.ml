@@ -4,7 +4,7 @@ let () =
   Stdio.print_endline "(* -*- mode: caml -*- *)";
   Stdio.print_endline "(* generated automatically. DO NOT EDIT *)";
   Stdio.print_endline "(* To update this file, you should run `dune runtest; dune promote`. *)";
-  Sys.argv
+  Sys.get_argv ()
   |> Array.to_list
   |> List.tl
   |> Option.value ~default:[]
@@ -35,6 +35,6 @@ let () =
           )
     with
     | e ->
-      Stdio.eprintf "%s: parse error: %s\n" Sys.argv.(0) @@ Exn.to_string e;
+      Stdio.eprintf "%s: parse error: %s\n" (Sys.get_argv ()).(0) @@ Exn.to_string e;
       Caml.exit 1
   end
