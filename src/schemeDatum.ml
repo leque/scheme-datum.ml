@@ -693,12 +693,14 @@ and list ~what ~start ~allows_dot elems ?tail tokenize =
   | { value = `Eof; start = _; end_ } ->
     fail_parse_errorf ~start ~end_ "unclosed %s" what
   | { value = `Dot; start; end_ } ->
-    begin match allows_dot, tail with
-      | false, _ ->
+    begin match allows_dot, elems, tail with
+      | false, _, _ ->
         fail_parse_errorf ~start ~end_ "%s cannot contain `.'" what
-      | true, Some _ ->
+      | true, _, Some _ ->
         fail_parse_error ~start ~end_ "multiple dot"
-      | true, None ->
+      | true, [], None ->
+        fail_parse_error ~start ~end_ "unexpected dot"
+      | true, (_::_), None ->
         let r =
           parse_tokens ~left:[] tokenize
           |> Result.map_error ~f:(function
