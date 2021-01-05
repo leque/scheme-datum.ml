@@ -67,24 +67,32 @@ type token =
   ]
 [@@deriving show]
 
-type t =
+type atom_ =
   [ lexeme_datum
   | `Bytevector of bytes
-  | `List of t list
-  | `DottedList of t list * t
-  | `Vector of t array
   ]
 [@@deriving show]
 
-type positioned =
-  [ lexeme_datum
-  | `Bytevector of bytes
-  | `List of positioned With_position.t list
-  | `DottedList of positioned With_position.t list * positioned With_position.t
-  | `Vector of positioned With_position.t array
+type 't atom =
+  [ `Vector of 't array
+  | atom_
   ]
+[@@deriving show]
 
-type t_with_position = positioned With_position.t
+type ('t, 'tl) t_ =
+  [ 't atom
+  | `List of 't list
+  | `DottedList of 't list * 'tl
+  ]
+[@@deriving show]
+
+type t = (t, t atom) t_
+[@@deriving show]
+
+type positioned = (t_with_position, t_with_position atom With_position.t) t_
+and t_with_position = positioned With_position.t
+
+type patom = t_with_position atom
 
 type atomosphere =
   [ `LineComment of string
@@ -654,7 +662,7 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
         | vs, Some { With_position.value = `DottedList(ys, t); _ }, end_ ->
           let value = `DottedList (vs @ ys, t) in
           { With_position.value; start; end_ }
-        | vs, Some t, end_ ->
+        | vs, Some ({ With_position.value = #patom; _} as t), end_ ->
           let value = `DottedList (vs, t) in
           { With_position.value; start; end_ }
       )
@@ -731,15 +739,20 @@ and abbr ~start name tokenize =
   let value = `List [With_position.dummy @@ `Symbol name ; v] in
   { With_position.value; start; end_ = v.end_ }
 
-let rec strip : t_with_position -> t = function
-  | { With_position.value = #lexeme_datum as v; _ } -> v
-  | { value = `Bytevector _ as v } -> v
+let rec strip (x : t_with_position) : t =
+  let strip_atom = function
+    | { With_position.value = #atom_ as v; _ } ->
+      v
+    | { With_position.value = `Vector arr; _ } ->
+      `Vector (Array.map ~f:strip arr)
+  in
+  match x with
+  | { With_position.value = #patom; _ } as v ->
+    (strip_atom v :> t)
   | { value = `List vs; _ } ->
     `List (List.map ~f:strip vs)
   | { value = `DottedList (vs, t); _ } ->
-    `DottedList (List.map ~f:strip vs, strip t)
-  | { value = `Vector vs; _ } ->
-    `Vector (Array.map ~f:strip vs)
+    `DottedList (List.map ~f:strip vs, strip_atom t)
 
 let read_with_position lexbuf =
   let tokenize () = read_token lexbuf in
@@ -899,7 +912,7 @@ let rec write buf (t : t) =
     putsp ();
     putt `Dot;
     putsp ();
-    write buf t;
+    write buf (t :> t);
     putt `Close
 
 let write_to_string t =

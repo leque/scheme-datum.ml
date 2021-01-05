@@ -69,22 +69,25 @@ type token =
 
 (** {2 AST} *)
 
-type t =
-    [ lexeme_datum
-    | `Bytevector of Bytes.t
-    | `DottedList of t list * t
-    | `List of t list
-    | `Vector of t array
-    ]
-  [@@deriving show]
+type 't atom =
+  [ lexeme_datum
+  | `Bytevector of bytes
+  | `Vector of 't array
+  ]
+[@@deriving show]
 
-type t_with_position =
-    [ lexeme_datum
-    | `Bytevector of Bytes.t
-    | `DottedList of t_with_position list * t_with_position
-    | `List of t_with_position list
-    | `Vector of t_with_position array
-    ] With_position.t
+type ('t, 'tl) t_ =
+  [ 't atom
+  | `List of 't list
+  | `DottedList of 't list * 'tl
+  ]
+[@@deriving show]
+
+type t = (t, t atom) t_
+[@@deriving show]
+
+type positioned = (t_with_position, t_with_position atom With_position.t) t_
+and t_with_position = positioned With_position.t
 
 (** {1 Errors} *)
 
