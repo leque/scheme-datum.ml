@@ -18,5 +18,5 @@
   (base (and (>= v0.14) (< v0.15)))
   (stdio (and :with-test (>= v0.14) (< v0.15)))
   ppx_deriving
-  (sedlex (and (>= 2.0) (< 2.3)))
+  (sedlex (and (>= 2.0) (< 2.1)))
 ))
