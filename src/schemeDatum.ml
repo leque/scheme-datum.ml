@@ -771,25 +771,26 @@ let write_quoted ~quote buf v =
   let putc c = Caml.Buffer.add_utf_8_uchar buf c in
   let putf fmt = Printf.ksprintf puts fmt in
   let lexbuf = Sedlexing.Utf8.from_string v in
+  let is_control c = match Uucp.Gc.general_category c with `Cc -> true | _ -> false in
   let rec loop () =
     match %sedlex lexbuf with
     | eof -> ()
-    | cc ->
-      let c = Sedlexing.lexeme_char lexbuf 0 in
-      begin match List.Assoc.find ~equal:Uchar.equal char_mnemonics c with
-      | Some s ->
-        puts "\\";
-        puts s
-      | None ->
-        putf "\\x%02x;" @@ Uchar.to_scalar c
-      end;
-      loop ()
     | any ->
       let c = Sedlexing.lexeme_char lexbuf 0 in
-      if Uchar.equal c quote then begin
-        puts "\\"
+      if is_control c then
+        begin match List.Assoc.find ~equal:Uchar.equal char_mnemonics c with
+          | Some s ->
+            puts "\\";
+            puts s
+          | None ->
+            putf "\\x%02x;" @@ Uchar.to_scalar c
+        end
+      else begin
+        if Uchar.equal c quote then begin
+          puts "\\"
+        end;
+        putc c;
       end;
-      putc c;
       loop ()
     | _ -> assert false
   in

@@ -4,6 +4,7 @@
  (flags :standard -w +A-4-9-39-40-42-48 -safe-string)
  (libraries base
             sedlex
+            uucp
             )
  (preprocess (pps
                sedlex.ppx
