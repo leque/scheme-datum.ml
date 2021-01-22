@@ -101,14 +101,12 @@ type atomosphere =
   | `Whitespace of string
   ] With_position.t
 
-type s =
+type ss =
   [ positioned
   | `Eof
   | `Close
   | `Dot
-  ]
-
-type ss = s With_position.t
+  ] With_position.t
 
 type lexical_error = [`LexicalError of string With_position.t]
 [@@deriving show]
