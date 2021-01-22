@@ -9,5 +9,6 @@
  (preprocess (pps
                sedlex.ppx
                ppx_deriving.show
+               ppx_let
               ))
  )

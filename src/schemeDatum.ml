@@ -269,13 +269,13 @@ let flonum = [%sedlex.regexp?
 let delimiter = [%sedlex.regexp? white_space | "|" | "(" | ")" | "\"" | ";"]
 
 let require_delimiter ~what lexbuf res =
-  let open Result.Monad_infix in
+  let open Result.Let_syntax in
   Sedlexing.start lexbuf;
   let r =
-    res >>= fun res ->
+    let%bind res = res in
     match %sedlex lexbuf with
       | delimiter | eof ->
-        Result.return res
+        return res
       | _ ->
         fail_lexical_errorf ~lexbuf
           "%s should be terminated by a delimiter" what
@@ -284,17 +284,18 @@ let require_delimiter ~what lexbuf res =
   r
 
 let rec read_token lexbuf : (token With_position.t, _) Result.t =
+  let open Result.Let_syntax in
   match %sedlex lexbuf with
   (* boolean *)
   | "#", _t, Opt (_r, _u, _e) ->
     `Boolean true
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
     |> require_delimiter ~what:"booleans" lexbuf
   | "#", _f, Opt (_a, _l, _s, _e) ->
     `Boolean false
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
     |> require_delimiter ~what:"booleans" lexbuf
   (* number *)
   | "#", _b ->
@@ -303,7 +304,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
       | sign, Plus digit2 ->
         `Integer2 (Lex.lexeme lexbuf)
         |> add_position ~start ~lexbuf
-        |> Result.return
+        |> return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
         fail_lexical_error ~start ~lexbuf "unexpected input while reading `Integer2"
@@ -314,7 +315,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
       | sign, Plus digit8 ->
         `Integer8 (Lex.lexeme lexbuf)
         |> add_position ~start ~lexbuf
-        |> Result.return
+        |> return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
         fail_lexical_error ~start ~lexbuf "unexpected input while reading `Integer8"
@@ -325,7 +326,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
       | sign, Plus digit16 ->
         `Integer16 (Lex.lexeme lexbuf)
         |> add_position ~start ~lexbuf
-        |> Result.return
+        |> return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
         fail_lexical_error ~start ~lexbuf "unexpected input while reading `Integer16"
@@ -336,12 +337,12 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
       | sign, Plus digit10 ->
         `Integer10 (Lex.lexeme lexbuf)
         |> add_position ~start ~lexbuf
-        |> Result.return
+        |> return
         |> require_delimiter ~what:"numbers" lexbuf
       | sign, flonum ->
         `Number (Lex.lexeme lexbuf)
         |> add_position ~start ~lexbuf
-        |> Result.return
+        |> return
         |> require_delimiter ~what:"numbers" lexbuf
       | _ ->
         fail_lexical_error ~start ~lexbuf "unexpected input while reading `Number"
@@ -349,12 +350,12 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
   | sign, Plus digit10 ->
     `Integer10 (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
     |> require_delimiter ~what:"numbers" lexbuf
   | sign, flonum ->
     `Number (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
     |> require_delimiter ~what:"numbers" lexbuf
   (* character *)
   | "#\\" ->
@@ -368,13 +369,13 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
       | initial, Plus subsequent ->
         `NamedChar (Lex.lexeme lexbuf )
         |> add_position ~start ~lexbuf
-        |> Result.return
+        |> return
         |> require_delimiter ~what:"characters" lexbuf
       | any ->
         let ch = Sedlexing.lexeme_char lexbuf 0 in
         `Char ch
         |> add_position ~start ~lexbuf
-        |> Result.return
+        |> return
         |> require_delimiter ~what:"characters" lexbuf
       | _ -> assert false
     end
@@ -391,12 +392,12 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
   | initial, Star subsequent ->
     `Symbol (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
     |> require_delimiter ~what:"identifiers" lexbuf
   | peculiar_identifier ->
     `Symbol (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
     |> require_delimiter ~what:"identifiers" lexbuf
   (* comment*)
   | "#|" ->
@@ -407,70 +408,71 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     let c = Lex.sub_lexeme lexbuf 1 (Sedlexing.lexeme_length lexbuf - 1) in
     `LineComment c
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | "#;" ->
     `DatumComment
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   (* bytevector *)
   | "#u8(" ->
     `OpenBv
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   (* compound datum *)
   | "(" ->
     `OpenL
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | "#(" ->
     `OpenV
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | ")" ->
     `Close
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | "." ->
     `Dot
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
     |> require_delimiter ~what:"dot" lexbuf
   (* abbreviation *)
   | "'" ->
     `Quote
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | "`" ->
     `Quasiquote
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | "," ->
     `Unquote
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | ",@" ->
     `UnquoteSplicing
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   (* whitespace *)
   | Plus white_space ->
     `Whitespace (Lex.lexeme lexbuf)
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | eof ->
     `Eof
     |> add_position ~lexbuf
-    |> Result.return
+    |> return
   | any ->
     fail_lexical_errorf ~lexbuf "unexpected input: %s" (Lex.lexeme lexbuf)
   | _ ->
     assert false
 and string start buf lexbuf =
+  let open Result.Let_syntax in
   match %sedlex lexbuf with
   | "\"" ->
     `String (Buffer.contents buf)
     |> add_position ~start ~lexbuf
-    |> Result.return
+    |> return
   | "\\\"" ->
     Buffer.add_string buf "\"";
     string start buf lexbuf
@@ -481,11 +483,12 @@ and string start buf lexbuf =
   | _ ->
     quoted "string" string start buf lexbuf
 and symbol start buf lexbuf =
+  let open Result.Let_syntax in
   match %sedlex lexbuf with
   | "|" ->
     `Symbol (Buffer.contents buf)
     |> add_position ~start ~lexbuf
-    |> Result.return
+    |> return
   | "\\|" ->
     Buffer.add_string buf "|";
     symbol start buf lexbuf
@@ -496,6 +499,7 @@ and symbol start buf lexbuf =
   | _ ->
     quoted "symbol" symbol start buf lexbuf
 and quoted what cont start buf lexbuf =
+  let open Result.Let_syntax in
   match %sedlex lexbuf with
   | "\\", _x ->
     let xstart, _ = Sedlexing.lexing_positions lexbuf in
@@ -504,13 +508,13 @@ and quoted what cont start buf lexbuf =
         let h = Lex.lexeme lexbuf in
         begin match %sedlex lexbuf with
           | ";" ->
-            h
-            |> uchar_of_hex ~start:xstart ~lexbuf
-            |> tap (Result.iter_error ~f:(fun _ ->
-                recover_lexical_state (cont start buf) lexbuf))
-            |> Result.bind ~f:(fun s ->
-                Caml.Buffer.add_utf_8_uchar buf s;
-                cont start buf lexbuf)
+            let%bind uc =
+              uchar_of_hex h ~start:xstart ~lexbuf
+              |> tap (Result.iter_error ~f:(fun _ ->
+                  recover_lexical_state (cont start buf) lexbuf))
+            in
+            Caml.Buffer.add_utf_8_uchar buf uc;
+            cont start buf lexbuf
           | _ ->
             let r = fail_lexical_errorf ~start:xstart ~lexbuf
                 "unterminated hex_escape in %s" what in
@@ -546,6 +550,7 @@ and quoted what cont start buf lexbuf =
     r
   | _ -> assert false
 and comment start buf lexbuf level =
+  let open Result.Let_syntax in
   match %sedlex lexbuf with
   | "#|" ->
     Lex.lexeme lexbuf
@@ -555,7 +560,7 @@ and comment start buf lexbuf level =
     if level = 1 then
       `BlockComment (Buffer.contents buf)
       |> add_position ~start ~lexbuf
-      |> Result.return
+      |> return
     else begin
       Lex.lexeme lexbuf
       |> Buffer.add_string buf;
@@ -598,17 +603,17 @@ let parse_bytevector_element (v : t_with_position) =
     fail_parse_error ~start ~end_ "not a byte"
 
 let list_to_bytevector ~start ~end_ vs =
-  let open Result.Monad_infix in
+  let open Result.Let_syntax in
   let buf = Buffer.create @@ List.length vs in
   let ns = vs |> List.map ~f:parse_bytevector_element in
-  Result.all ns >>= fun ns ->
+  let%map ns = Result.all ns in
   List.iter ~f:(Buffer.add_char buf) ns;
   let value = `Bytevector (Buffer.contents_bytes buf) in
-  Result.return { With_position.value; start; end_ }
+  { With_position.value; start; end_ }
 
 let rec parse_tokens ~left (tokenize : _ tokenizer) =
-  let open Result.Monad_infix in
-  parse0 ~left tokenize >>= function
+  let open Result.Let_syntax in
+  match%bind parse0 ~left tokenize with
   | { value = `Close; start; end_ } ->
     fail_parse_error ~start ~end_ "extra close parenthesis"
   | { value = `Dot; start; end_ } ->
@@ -616,20 +621,20 @@ let rec parse_tokens ~left (tokenize : _ tokenizer) =
   | { With_position.value = `Eof; start; end_ } ->
     fail_eof ~start ~end_ "eof"
   | { value = #positioned; _ } as x ->
-    Result.return x
+    return x
 and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
-  let open Result.Monad_infix in
-  tokenize () >>= function
+  let open Result.Let_syntax in
+  match%bind tokenize () with
   | { With_position.value = #lexeme_datum; _ } as v ->
-    Result.return v
+    return v
   | { value = `NamedChar c; start; end_ } ->
     let r =
       List.Assoc.find ~equal:String.equal name_chars c
       |> Result.of_option
         ~error:(make_parse_errorf ~start ~end_ "unknown character named %s" c)
     in
-    r >>= fun c ->
-    Result.return { With_position.value = `Char c; start; end_ }
+    let%map c = r in
+    { With_position.value = `Char c; start; end_ }
   | { value = `LineComment _; _ } as v ->
     parse0 ~left:(v::left) tokenize
   | { value = `BlockComment _; _ } as v ->
@@ -637,45 +642,40 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
   | { value = `Whitespace _; _ } as v ->
     parse0 ~left:(v::left) tokenize
   | { value = `DatumComment; start; _ } ->
-    let r =
+    let%bind v =
       parse_tokens ~left:[] tokenize
       |> Result.map_error ~f:(function
           | `Eof { With_position.start; end_; _ } ->
             make_parse_error ~start ~end_ "eof after #;"
           | v -> v)
     in
-    r >>= fun v ->
-    let c =
-      { With_position.value = `DatumComment v; start; end_ = v.end_ } in
+    let c = { With_position.value = `DatumComment v; start; end_ = v.end_ } in
     parse0 ~left:(c::left) tokenize
   | { value = `OpenL; start; _ } ->
-    list ~what:"list" ~allows_dot:true ~start [] tokenize
-    |> Result.map ~f:(function
-        | vs, None, end_ ->
-          let value = `List vs in
-          { With_position.value; start; end_ }
-        | vs, Some { With_position.value = `List ys; _ }, end_ ->
-          let value = `List (vs @ ys) in
-          { With_position.value; start; end_ }
-        | vs, Some { With_position.value = `DottedList(ys, t); _ }, end_ ->
-          let value = `DottedList (vs @ ys, t) in
-          { With_position.value; start; end_ }
-        | vs, Some ({ With_position.value = #patom; _} as t), end_ ->
-          let value = `DottedList (vs, t) in
-          { With_position.value; start; end_ }
-      )
+    begin match%map list ~what:"list" ~allows_dot:true ~start [] tokenize with
+      | vs, None, end_ ->
+        let value = `List vs in
+        { With_position.value; start; end_ }
+      | vs, Some { With_position.value = `List ys; _ }, end_ ->
+        let value = `List (vs @ ys) in
+        { With_position.value; start; end_ }
+      | vs, Some { With_position.value = `DottedList(ys, t); _ }, end_ ->
+        let value = `DottedList (vs @ ys, t) in
+        { With_position.value; start; end_ }
+      | vs, Some ({ With_position.value = #patom; _} as t), end_ ->
+        let value = `DottedList (vs, t) in
+        { With_position.value; start; end_ }
+    end
   | { value = `OpenV; start; _ } ->
-    list ~what:"vector" ~allows_dot:false ~start [] tokenize
-    >>= begin function
+    begin match%bind list ~what:"vector" ~allows_dot:false ~start [] tokenize with
       | _, Some _, end_ ->
         fail_parse_error ~start ~end_ "invalid dotted-tail for vector"
       | vs, None, end_ ->
         let value = `Vector (Array.of_list vs) in
-        Result.return { With_position.value; start; end_ }
+        return { With_position.value; start; end_ }
     end
   | { value = `OpenBv; start; _ } ->
-    list ~what:"bytevector" ~allows_dot:false ~start [] tokenize
-    >>= begin function
+    begin match%bind list ~what:"bytevector" ~allows_dot:false ~start [] tokenize with
       | _, Some _, end_ ->
         fail_parse_error ~start ~end_ "invalid dotted-tail for bytevector"
       | vs, None, end_ ->
@@ -690,12 +690,12 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
   | { value = `UnquoteSplicing; start; _ } ->
     abbr ~start "unquote-splicing" tokenize
   | { value = (`Eof | `Dot | `Close); _ } as v ->
-    Result.return v
+    return v
 and list ~what ~start ~allows_dot elems ?tail tokenize =
-  let open Result.Monad_infix in
-  parse0 tokenize >>= function
+  let open Result.Let_syntax in
+  match%bind parse0 tokenize with
   | { value = `Close; end_ } ->
-    Result.return (List.rev elems, tail, end_)
+    return (List.rev elems, tail, end_)
   | { value = `Eof; start = _; end_ } ->
     fail_parse_errorf ~start ~end_ "unclosed %s" what
   | { value = `Dot; start; end_ } ->
@@ -707,14 +707,13 @@ and list ~what ~start ~allows_dot elems ?tail tokenize =
       | true, [], None ->
         fail_parse_error ~start ~end_ "unexpected dot"
       | true, (_::_), None ->
-        let r =
+        let%bind tail =
           parse_tokens ~left:[] tokenize
           |> Result.map_error ~f:(function
               | `Eof { With_position.start; end_; _ } ->
                 make_parse_errorf ~start ~end_ "unclosed %s" what
               | v -> v)
         in
-        r >>= fun tail ->
         list ~what ~allows_dot ~start elems ~tail tokenize
     end
   | { value = #positioned; start; end_ } as v ->
@@ -725,15 +724,14 @@ and list ~what ~start ~allows_dot elems ?tail tokenize =
         list ~what ~allows_dot ~start (v :: elems) ?tail tokenize
     end
 and abbr ~start name tokenize =
-  let open Result.Monad_infix in
-  let r =
+  let open Result.Let_syntax in
+  let%map v =
     parse_tokens ~left:[] tokenize
     |> Result.map_error ~f:(function
         | `Eof { With_position.start; end_; _ } ->
           make_parse_errorf ~start ~end_ "eof after %s" name
         | v -> v)
   in
-  r >>| fun v ->
   let value = `List [With_position.dummy @@ `Symbol name ; v] in
   { With_position.value; start; end_ = v.end_ }
 
