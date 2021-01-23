@@ -16,7 +16,7 @@
 
 (rule
  (alias runtest)
- (action (diff lexer.expected lexer.output)))
+ (action (diff lexer.expected.ml lexer.output)))
 
 (executable
  (name test)

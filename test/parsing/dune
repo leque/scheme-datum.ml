@@ -9,7 +9,7 @@
 
 (rule
  (alias runtest)
- (action (diff parser.expected parser.output)))
+ (action (diff parser.expected.ml parser.output)))
 
 (executable
  (name test)
