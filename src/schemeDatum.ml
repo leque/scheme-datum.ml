@@ -9,7 +9,6 @@ module With_position = struct
     }
 
   let pp ppv f v =
-    let () = ppv f v.value in
     let f1 = v.start.pos_fname in
     let f2 = v.end_.pos_fname in
     let l1 = v.start.pos_lnum in
@@ -18,17 +17,16 @@ module With_position = struct
     let c2 = v.end_.pos_cnum - v.end_.pos_bol + 1 in
     match String.equal f1 f2, l1 = l2, c1 = c2 with
     | false, _, _ ->
-      Format.fprintf f "\n(* %s:%d.%d-%s:%d.%d *)" f1 l1 c1 f2 l2 c2
+      Format.fprintf f "@[<v>%a@ (* %s:%d.%d-%s:%d.%d *)@]" ppv v.value f1 l1 c1 f2 l2 c2
     | _, false, _ ->
-      Format.fprintf f "\n(* %s:%d.%d-%d.%d *)" f1 l1 c1 l2 c2
+      Format.fprintf f "@[<v>%a@ (* %s:%d.%d-%d.%d *)@]" ppv v.value f1 l1 c1 l2 c2
     | _, _, false ->
-      Format.fprintf f "\n(* %s:%d.%d-%d *)" f1 l1 c1 c2
+      Format.fprintf f "@[<v>%a@ (* %s:%d.%d-%d *)@]" ppv v.value f1 l1 c1 c2
     | _, _, true ->
-      Format.fprintf f "\n(* %s:%d.%d *)" f1 l1 c1
+      Format.fprintf f "@[<v>%a@ (* %s:%d.%d *)@]" ppv v.value f1 l1 c1
 
   let show ppv v =
-    pp ppv Format.str_formatter v;
-    Format.flush_str_formatter ()
+    Format.asprintf "%a" (pp ppv) v
 
   let dummy value =
     { value; start = Lexing.dummy_pos; end_ = Lexing.dummy_pos }

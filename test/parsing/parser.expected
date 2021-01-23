@@ -23,7 +23,7 @@
 `DottedList (([`Integer10 ("1"); `Integer10 ("2"); `Integer10 ("3")],
               `Integer10 ("4")))
 `ParseError ("unexpected dot"
-(* list.scm:5.2-3 *))
+             (* list.scm:5.2-3 *))
 `Integer10 ("1")
 `ParseError ("extra close parenthesis"
-(* list.scm:5.5-6 *))
+             (* list.scm:5.5-6 *))
