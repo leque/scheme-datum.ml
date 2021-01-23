@@ -628,12 +628,11 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
   | { With_position.value = #lexeme_datum; _ } as v ->
     return v
   | { value = `NamedChar c; start; end_ } ->
-    let r =
+    let%map c =
       List.Assoc.find ~equal:String.equal name_chars c
       |> Result.of_option
         ~error:(make_parse_errorf ~start ~end_ "unknown character named %s" c)
     in
-    let%map c = r in
     { With_position.value = `Char c; start; end_ }
   | { value = `LineComment _; _ } as v ->
     parse0 ~left:(v::left) tokenize
