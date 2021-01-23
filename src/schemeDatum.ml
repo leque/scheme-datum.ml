@@ -702,7 +702,7 @@ and list ~what ~start ~allows_dot elems ?tail tokenize =
       | false, _, _ ->
         fail_parse_errorf ~start ~end_ "%s cannot contain `.'" what
       | true, _, Some _ ->
-        fail_parse_error ~start ~end_ "multiple dot"
+        fail_parse_error ~start ~end_ "multiple dots"
       | true, [], None ->
         fail_parse_error ~start ~end_ "unexpected dot"
       | true, (_::_), None ->
