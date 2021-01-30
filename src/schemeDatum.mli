@@ -4,7 +4,9 @@ module With_position : sig
     ; start : Lexing.position
     ; end_ : Lexing.position
     }
-  [@@deriving show]
+
+  val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+  val show : (Format.formatter -> 'a -> unit) -> 'a t -> string
 end
 
 (** {1 Tokens and AST} *)
@@ -27,7 +29,6 @@ type lexeme_datum =
     | `String of string
     | `Symbol of string
     ]
-  [@@deriving show]
 
 (** {2 Tokens} *)
 
@@ -65,7 +66,9 @@ type token =
     (** ,@ *)
     | `Whitespace of string
     ]
-  [@@deriving show]
+
+val pp_token : Format.formatter -> token -> unit
+val show_token : token -> string
 
 (** {2 AST} *)
 
@@ -74,33 +77,39 @@ type 't atom =
   | `Bytevector of bytes
   | `Vector of 't array
   ]
-[@@deriving show]
 
 type ('t, 'tl) t_ =
   [ 't atom
   | `List of 't list
   | `DottedList of 't list * 'tl
   ]
-[@@deriving show]
 
 type t = (t, t atom) t_
-[@@deriving show]
 
 type positioned = (t_with_position, t_with_position atom With_position.t) t_
 and t_with_position = positioned With_position.t
 
+val pp : Format.formatter -> t -> unit
+val show : t -> string
+
 (** {1 Errors} *)
 
 type lexical_error = [ `LexicalError of string With_position.t ]
-[@@deriving show]
+
+val pp_lexical_error : Format.formatter -> lexical_error -> unit
+val show_lexical_error : lexical_error -> string
 
 type parse_error = [ `ParseError of string With_position.t ]
-[@@deriving show]
+
+val pp_parse_error : Format.formatter -> parse_error -> unit
+val show_parse_error : parse_error -> string
 
 type eof = [ `Eof of string With_position.t ]
-[@@deriving show]
 
-(** {1 Reader and Writer} *)
+val pp_eof : Format.formatter -> eof -> unit
+val show_eof : eof -> string
+
+(** {1 Readers and Writers} *)
 
 val read_token :
   Sedlexing.lexbuf ->
