@@ -13,7 +13,7 @@ depends: [
   "base" {>= "v0.14" & < "v0.15"}
   "stdio" {with-test & >= "v0.14" & < "v0.15"}
   "ppx_deriving"
-  "ppx_let"
+  "ppx_let" {build}
   "uucp" {>= "13.0" & < "14.0"}
   "sedlex" {>= "2.3" & < "3.0"}
 ]
