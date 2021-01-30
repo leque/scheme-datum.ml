@@ -106,7 +106,7 @@ val read_token :
   Sedlexing.lexbuf ->
   (token With_position.t, [> lexical_error ]) result
 
-val write_token : token -> string
+val string_of_token : token -> string
 
 val read_with_position :
   Sedlexing.lexbuf ->

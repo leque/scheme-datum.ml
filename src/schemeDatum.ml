@@ -801,7 +801,7 @@ let write_symbol buf v =
   | _ ->
     write_quoted ~quote:uchar_bar buf v
 
-let write_token : token -> string = function
+let string_of_token : token -> string = function
   | `Boolean true ->
     "#t"
   | `Boolean false ->
@@ -863,7 +863,7 @@ let write_token : token -> string = function
 
 let rec write buf (t : t) =
   let puts s = Buffer.add_string buf s in
-  let putt t = puts @@ write_token t in
+  let putt t = puts @@ string_of_token t in
   let putsp () = puts " " in
   match t with
   | #lexeme_datum as v ->
