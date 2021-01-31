@@ -407,6 +407,7 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     comment start buf lexbuf 1
   | ";", Star (Compl (Chars "\r\n")), (line_ending | eof) ->
     let c = Lex.sub_lexeme lexbuf 1 (Sedlexing.lexeme_length lexbuf - 1) in
+    (* NB: preserve newlines to distinguish comments at eof and others*)
     `LineComment c
     |> add_position ~lexbuf
     |> return

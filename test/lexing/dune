@@ -10,6 +10,7 @@
    "unclosed-comment.scm"
    "unclosed-nested-comment.scm"
    "non-delim.scm"
+   "comment.scm"
  )
  (action
   (with-stdout-to lexer.output (run ./test.exe %{deps}))))
