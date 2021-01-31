@@ -5,6 +5,8 @@ module With_position : sig
     ; end_ : Lexing.position
     }
 
+  val string_of_position : _ t -> string
+
   val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
   val show : (Format.formatter -> 'a -> unit) -> 'a t -> string
 end
