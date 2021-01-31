@@ -72,8 +72,8 @@ type atom_ =
 [@@deriving show]
 
 type 't atom =
-  [ `Vector of 't array
-  | atom_
+  [ atom_
+  | `Vector of 't array
   ]
 [@@deriving show]
 
