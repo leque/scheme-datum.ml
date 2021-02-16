@@ -284,7 +284,126 @@ let require_delimiter ~what lexbuf res =
   Sedlexing.rollback lexbuf;
   r
 
-let rec read_token lexbuf : (token With_position.t, _) Result.t =
+let rec recover_lexical_state f lexbuf =
+  match f lexbuf with
+  | Ok _ ->
+    ()
+  | Error _ ->
+    recover_lexical_state f lexbuf
+
+let quoted what cont start buf lexbuf =
+  let open Result.Let_syntax in
+  match %sedlex lexbuf with
+  | "\\", _x ->
+    let xstart, _ = Sedlexing.lexing_positions lexbuf in
+    begin match %sedlex lexbuf with
+      | Plus hex_digit ->
+        let h = Lex.lexeme lexbuf in
+        begin match %sedlex lexbuf with
+          | ";" ->
+            let%bind uc =
+              uchar_of_hex h ~start:xstart ~lexbuf
+              |> tap (Result.iter_error ~f:(fun _ ->
+                  recover_lexical_state (cont start buf) lexbuf))
+            in
+            Caml.Buffer.add_utf_8_uchar buf uc;
+            cont start buf lexbuf
+          | _ ->
+            let r = fail_lexical_errorf ~start:xstart ~lexbuf
+                "unterminated hex_escape in %s" what in
+            recover_lexical_state (cont start buf) lexbuf;
+            r
+        end
+      | _ ->
+        let r = fail_lexical_errorf ~start ~lexbuf
+            "invalid hex_escape in %s" what in
+        recover_lexical_state (cont start buf) lexbuf;
+        r
+    end
+  | mnemonic_escape ->
+    Lex.sub_lexeme lexbuf 1 1
+    |> List.Assoc.find_exn ~equal:String.equal mnemonic_chars
+    |> Caml.Buffer.add_utf_8_uchar buf;
+    cont start buf lexbuf
+  | escaped_space ->
+    cont start buf lexbuf
+  | "\\", any ->
+    let r = fail_lexical_errorf ~start ~lexbuf
+        "unrecognized escape sequence in %s: %s" what (Lex.lexeme lexbuf)
+    in
+    recover_lexical_state (cont start buf) lexbuf;
+    r
+  | eof ->
+    fail_lexical_errorf ~start ~lexbuf "unclosed %s" what
+  | any ->
+    let r = fail_lexical_errorf ~start ~lexbuf
+        "unexpected char in %s: %s" what (Lex.lexeme lexbuf)
+    in
+    recover_lexical_state (cont start buf) lexbuf;
+    r
+  | _ -> assert false
+
+let rec string start buf lexbuf =
+  let open Result.Let_syntax in
+  match %sedlex lexbuf with
+  | "\"" ->
+    `String (Buffer.contents buf)
+    |> add_position ~start ~lexbuf
+    |> return
+  | "\\\"" ->
+    Buffer.add_string buf "\"";
+    string start buf lexbuf
+  | Compl (Chars "\"\\") ->
+    Lex.lexeme lexbuf
+    |> Buffer.add_string buf;
+    string start buf lexbuf
+  | _ ->
+    quoted "string" string start buf lexbuf
+
+let rec symbol start buf lexbuf =
+  let open Result.Let_syntax in
+  match %sedlex lexbuf with
+  | "|" ->
+    `Symbol (Buffer.contents buf)
+    |> add_position ~start ~lexbuf
+    |> return
+  | "\\|" ->
+    Buffer.add_string buf "|";
+    symbol start buf lexbuf
+  | Compl (Chars "|\\") ->
+    Lex.lexeme lexbuf
+    |> Buffer.add_string buf;
+    symbol start buf lexbuf
+  | _ ->
+    quoted "symbol" symbol start buf lexbuf
+
+let rec comment start buf lexbuf level =
+  let open Result.Let_syntax in
+  match %sedlex lexbuf with
+  | "#|" ->
+    Lex.lexeme lexbuf
+    |> Buffer.add_string buf;
+    comment start buf lexbuf @@ level + 1
+  | "|#" ->
+    if level = 1 then
+      `BlockComment (Buffer.contents buf)
+      |> add_position ~start ~lexbuf
+      |> return
+    else begin
+      Lex.lexeme lexbuf
+      |> Buffer.add_string buf;
+      comment start buf lexbuf @@ level - 1
+    end
+  | any ->
+    Lex.lexeme lexbuf
+    |> Buffer.add_string buf;
+    comment start buf lexbuf level
+  | eof ->
+    fail_lexical_error ~start ~lexbuf "unclosed comment"
+  | _ ->
+    assert false
+
+let read_token lexbuf : (token With_position.t, _) Result.t =
   let open Result.Let_syntax in
   match %sedlex lexbuf with
   (* boolean *)
@@ -468,120 +587,6 @@ let rec read_token lexbuf : (token With_position.t, _) Result.t =
     fail_lexical_errorf ~lexbuf "unexpected input: %s" (Lex.lexeme lexbuf)
   | _ ->
     assert false
-and string start buf lexbuf =
-  let open Result.Let_syntax in
-  match %sedlex lexbuf with
-  | "\"" ->
-    `String (Buffer.contents buf)
-    |> add_position ~start ~lexbuf
-    |> return
-  | "\\\"" ->
-    Buffer.add_string buf "\"";
-    string start buf lexbuf
-  | Compl (Chars "\"\\") ->
-    Lex.lexeme lexbuf
-    |> Buffer.add_string buf;
-    string start buf lexbuf
-  | _ ->
-    quoted "string" string start buf lexbuf
-and symbol start buf lexbuf =
-  let open Result.Let_syntax in
-  match %sedlex lexbuf with
-  | "|" ->
-    `Symbol (Buffer.contents buf)
-    |> add_position ~start ~lexbuf
-    |> return
-  | "\\|" ->
-    Buffer.add_string buf "|";
-    symbol start buf lexbuf
-  | Compl (Chars "|\\") ->
-    Lex.lexeme lexbuf
-    |> Buffer.add_string buf;
-    symbol start buf lexbuf
-  | _ ->
-    quoted "symbol" symbol start buf lexbuf
-and quoted what cont start buf lexbuf =
-  let open Result.Let_syntax in
-  match %sedlex lexbuf with
-  | "\\", _x ->
-    let xstart, _ = Sedlexing.lexing_positions lexbuf in
-    begin match %sedlex lexbuf with
-      | Plus hex_digit ->
-        let h = Lex.lexeme lexbuf in
-        begin match %sedlex lexbuf with
-          | ";" ->
-            let%bind uc =
-              uchar_of_hex h ~start:xstart ~lexbuf
-              |> tap (Result.iter_error ~f:(fun _ ->
-                  recover_lexical_state (cont start buf) lexbuf))
-            in
-            Caml.Buffer.add_utf_8_uchar buf uc;
-            cont start buf lexbuf
-          | _ ->
-            let r = fail_lexical_errorf ~start:xstart ~lexbuf
-                "unterminated hex_escape in %s" what in
-            recover_lexical_state (cont start buf) lexbuf;
-            r
-        end
-      | _ ->
-        let r = fail_lexical_errorf ~start ~lexbuf
-            "invalid hex_escape in %s" what in
-        recover_lexical_state (cont start buf) lexbuf;
-        r
-    end
-  | mnemonic_escape ->
-    Lex.sub_lexeme lexbuf 1 1
-    |> List.Assoc.find_exn ~equal:String.equal mnemonic_chars
-    |> Caml.Buffer.add_utf_8_uchar buf;
-    cont start buf lexbuf
-  | escaped_space ->
-    cont start buf lexbuf
-  | "\\", any ->
-    let r = fail_lexical_errorf ~start ~lexbuf
-        "unrecognized escape sequence in %s: %s" what (Lex.lexeme lexbuf)
-    in
-    recover_lexical_state (cont start buf) lexbuf;
-    r
-  | eof ->
-    fail_lexical_errorf ~start ~lexbuf "unclosed %s" what
-  | any ->
-    let r = fail_lexical_errorf ~start ~lexbuf
-        "unexpected char in %s: %s" what (Lex.lexeme lexbuf)
-    in
-    recover_lexical_state (cont start buf) lexbuf;
-    r
-  | _ -> assert false
-and comment start buf lexbuf level =
-  let open Result.Let_syntax in
-  match %sedlex lexbuf with
-  | "#|" ->
-    Lex.lexeme lexbuf
-    |> Buffer.add_string buf;
-    comment start buf lexbuf @@ level + 1
-  | "|#" ->
-    if level = 1 then
-      `BlockComment (Buffer.contents buf)
-      |> add_position ~start ~lexbuf
-      |> return
-    else begin
-      Lex.lexeme lexbuf
-      |> Buffer.add_string buf;
-      comment start buf lexbuf @@ level - 1
-    end
-  | any ->
-    Lex.lexeme lexbuf
-    |> Buffer.add_string buf;
-    comment start buf lexbuf level
-  | eof ->
-    fail_lexical_error ~start ~lexbuf "unclosed comment"
-  | _ ->
-    assert false
-and recover_lexical_state f lexbuf =
-  match f lexbuf with
-  | Ok _ ->
-    ()
-  | Error _ ->
-    recover_lexical_state f lexbuf
 
 type 'a tokenizer = unit -> (token With_position.t, 'a) Result.t
 
