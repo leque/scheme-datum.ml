@@ -269,6 +269,180 @@ let flonum = [%sedlex.regexp?
 
 let delimiter = [%sedlex.regexp? white_space | "|" | "(" | ")" | "\"" | ";"]
 
+let uchar_dquote = Uchar.of_char '"'
+
+let uchar_bar = Uchar.of_char '|'
+
+let write_quoted ~quote buf v =
+  let puts s = Buffer.add_string buf s in
+  let putc c = Caml.Buffer.add_utf_8_uchar buf c in
+  let putf fmt = Printf.ksprintf puts fmt in
+  let lexbuf = Sedlexing.Utf8.from_string v in
+  let is_control c = match Uucp.Gc.general_category c with `Cc -> true | _ -> false in
+  let rec loop () =
+    match %sedlex lexbuf with
+    | eof -> ()
+    | any ->
+      let c = Sedlexing.lexeme_char lexbuf 0 in
+      if is_control c then
+        begin match List.Assoc.find ~equal:Uchar.equal char_mnemonics c with
+          | Some s ->
+            puts "\\";
+            puts s
+          | None ->
+            putf "\\x%02x;" @@ Uchar.to_scalar c
+        end
+      else begin
+        if Uchar.equal c quote then begin
+          puts "\\"
+        end;
+        putc c;
+      end;
+      loop ()
+    | _ -> assert false
+  in
+  putc quote;
+  loop ();
+  putc quote
+
+let write_symbol buf v =
+  let puts s = Buffer.add_string buf s in
+  let lexbuf = Sedlexing.Utf8.from_string v in
+  match %sedlex lexbuf with
+  | initial, Star subsequent, eof
+  | peculiar_identifier, eof ->
+    puts v
+  | _ ->
+    write_quoted ~quote:uchar_bar buf v
+
+let string_of_token : token -> string = function
+  | `Boolean true ->
+    "#t"
+  | `Boolean false ->
+    "#f"
+  | `Integer2 s ->
+     "#b" ^ s
+  | `Integer8 s ->
+     "#o" ^ s
+  | `Integer10 s ->
+     s
+  | `Integer16 s ->
+     "#x" ^ s
+  | `Number s ->
+     s
+  | `Char c ->
+    begin match List.Assoc.find ~equal:Uchar.equal char_names c with
+    | Some s ->
+      Printf.sprintf "#\\%s" s
+    | None ->
+      Printf.sprintf "#\\x%x" @@ Uchar.to_scalar c
+    end
+  | `String s ->
+    let buf = Buffer.create 16 in
+    write_quoted ~quote:uchar_dquote buf s;
+    Buffer.contents buf
+  | `Symbol s ->
+    let buf = Buffer.create 16 in
+    write_symbol buf s;
+    Buffer.contents buf
+  | `NamedChar s ->
+    Printf.sprintf "#\\%s" s
+  | `LineComment s ->
+    ";" ^ s
+  | `BlockComment s ->
+    Printf.sprintf "#|%s|#" s
+  | `DatumComment ->
+    "#;"
+  | `Whitespace s ->
+    s
+  | `OpenBv ->
+    "#u8("
+  | `OpenL ->
+    "("
+  | `OpenV ->
+    "#("
+  | `Close ->
+    ")"
+  | `Dot ->
+    "."
+  | `Quote ->
+    "'"
+  | `Quasiquote ->
+    "`"
+  | `Unquote ->
+    ","
+  | `UnquoteSplicing ->
+    ",@"
+  | `Eof -> ""
+
+let rec write buf (t : t) =
+  let puts s = Buffer.add_string buf s in
+  let putt t = puts @@ string_of_token t in
+  let putsp () = puts " " in
+  match t with
+  | #lexeme_datum as v ->
+    putt v
+  | `Bytevector bytes ->
+    putt `OpenBv;
+    bytes |> Caml.Bytes.iteri (fun i c ->
+        if i > 0 then begin
+          putsp ()
+        end;
+        puts @@ Printf.sprintf "%d" @@ Char.to_int c
+      );
+    putt `Close
+  | `Vector vs ->
+    putt `OpenV;
+    vs |> Array.iteri ~f:(fun i v ->
+        if i > 0 then begin
+          putsp ()
+        end;
+        write buf v
+      );
+    putt `Close
+  | `List vs ->
+    putt `OpenL;
+    vs |> List.iteri ~f:(fun i v ->
+        if i > 0 then begin
+          putsp ()
+        end;
+        write buf v
+      );
+    putt `Close
+  | `DottedList (vs, t) ->
+    putt `OpenL;
+    vs |> List.iteri ~f:(fun i v ->
+        if i > 0 then begin
+          putsp ()
+        end;
+        write buf v
+      );
+    putsp ();
+    putt `Dot;
+    putsp ();
+    write buf (t :> t);
+    putt `Close
+
+let write_to_string t =
+  let buf = Buffer.create 128 in
+  write buf t;
+  Buffer.contents buf
+
+let rec strip (x : t_with_position) : t =
+  let strip_atom = function
+    | { With_position.value = #atom_ as v; _ } ->
+      v
+    | { With_position.value = `Vector arr; _ } ->
+      `Vector (Array.map ~f:strip arr)
+  in
+  match x with
+  | { With_position.value = #patom; _ } as v ->
+    (strip_atom v :> t)
+  | { value = `List vs; _ } ->
+    `List (List.map ~f:strip vs)
+  | { value = `DottedList (vs, t); _ } ->
+    `DottedList (List.map ~f:strip vs, strip_atom t)
+
 let require_delimiter ~what lexbuf res =
   let open Result.Let_syntax in
   Sedlexing.start lexbuf;
@@ -743,21 +917,6 @@ and abbr ~start name tokenize =
   let value = `List [With_position.dummy @@ `Symbol name ; v] in
   { With_position.value; start; end_ = v.end_ }
 
-let rec strip (x : t_with_position) : t =
-  let strip_atom = function
-    | { With_position.value = #atom_ as v; _ } ->
-      v
-    | { With_position.value = `Vector arr; _ } ->
-      `Vector (Array.map ~f:strip arr)
-  in
-  match x with
-  | { With_position.value = #patom; _ } as v ->
-    (strip_atom v :> t)
-  | { value = `List vs; _ } ->
-    `List (List.map ~f:strip vs)
-  | { value = `DottedList (vs, t); _ } ->
-    `DottedList (List.map ~f:strip vs, strip_atom t)
-
 let read_with_position lexbuf =
   let tokenize () = read_token lexbuf in
   parse_tokens ~left:[] tokenize
@@ -765,162 +924,3 @@ let read_with_position lexbuf =
 let read lexbuf =
   read_with_position lexbuf
   |> Result.map ~f:strip
-
-let uchar_dquote = Uchar.of_char '"'
-
-let uchar_bar = Uchar.of_char '|'
-
-let write_quoted ~quote buf v =
-  let puts s = Buffer.add_string buf s in
-  let putc c = Caml.Buffer.add_utf_8_uchar buf c in
-  let putf fmt = Printf.ksprintf puts fmt in
-  let lexbuf = Sedlexing.Utf8.from_string v in
-  let is_control c = match Uucp.Gc.general_category c with `Cc -> true | _ -> false in
-  let rec loop () =
-    match %sedlex lexbuf with
-    | eof -> ()
-    | any ->
-      let c = Sedlexing.lexeme_char lexbuf 0 in
-      if is_control c then
-        begin match List.Assoc.find ~equal:Uchar.equal char_mnemonics c with
-          | Some s ->
-            puts "\\";
-            puts s
-          | None ->
-            putf "\\x%02x;" @@ Uchar.to_scalar c
-        end
-      else begin
-        if Uchar.equal c quote then begin
-          puts "\\"
-        end;
-        putc c;
-      end;
-      loop ()
-    | _ -> assert false
-  in
-  putc quote;
-  loop ();
-  putc quote
-
-let write_symbol buf v =
-  let puts s = Buffer.add_string buf s in
-  let lexbuf = Sedlexing.Utf8.from_string v in
-  match %sedlex lexbuf with
-  | initial, Star subsequent, eof
-  | peculiar_identifier, eof ->
-    puts v
-  | _ ->
-    write_quoted ~quote:uchar_bar buf v
-
-let string_of_token : token -> string = function
-  | `Boolean true ->
-    "#t"
-  | `Boolean false ->
-    "#f"
-  | `Integer2 s ->
-     "#b" ^ s
-  | `Integer8 s ->
-     "#o" ^ s
-  | `Integer10 s ->
-     s
-  | `Integer16 s ->
-     "#x" ^ s
-  | `Number s ->
-     s
-  | `Char c ->
-    begin match List.Assoc.find ~equal:Uchar.equal char_names c with
-    | Some s ->
-      Printf.sprintf "#\\%s" s
-    | None ->
-      Printf.sprintf "#\\x%x" @@ Uchar.to_scalar c
-    end
-  | `String s ->
-    let buf = Buffer.create 16 in
-    write_quoted ~quote:uchar_dquote buf s;
-    Buffer.contents buf
-  | `Symbol s ->
-    let buf = Buffer.create 16 in
-    write_symbol buf s;
-    Buffer.contents buf
-  | `NamedChar s ->
-    Printf.sprintf "#\\%s" s
-  | `LineComment s ->
-    ";" ^ s
-  | `BlockComment s ->
-    Printf.sprintf "#|%s|#" s
-  | `DatumComment ->
-    "#;"
-  | `Whitespace s ->
-    s
-  | `OpenBv ->
-    "#u8("
-  | `OpenL ->
-    "("
-  | `OpenV ->
-    "#("
-  | `Close ->
-    ")"
-  | `Dot ->
-    "."
-  | `Quote ->
-    "'"
-  | `Quasiquote ->
-    "`"
-  | `Unquote ->
-    ","
-  | `UnquoteSplicing ->
-    ",@"
-  | `Eof -> ""
-
-let rec write buf (t : t) =
-  let puts s = Buffer.add_string buf s in
-  let putt t = puts @@ string_of_token t in
-  let putsp () = puts " " in
-  match t with
-  | #lexeme_datum as v ->
-    putt v
-  | `Bytevector bytes ->
-    putt `OpenBv;
-    bytes |> Caml.Bytes.iteri (fun i c ->
-        if i > 0 then begin
-          putsp ()
-        end;
-        puts @@ Printf.sprintf "%d" @@ Char.to_int c
-      );
-    putt `Close
-  | `Vector vs ->
-    putt `OpenV;
-    vs |> Array.iteri ~f:(fun i v ->
-        if i > 0 then begin
-          putsp ()
-        end;
-        write buf v
-      );
-    putt `Close
-  | `List vs ->
-    putt `OpenL;
-    vs |> List.iteri ~f:(fun i v ->
-        if i > 0 then begin
-          putsp ()
-        end;
-        write buf v
-      );
-    putt `Close
-  | `DottedList (vs, t) ->
-    putt `OpenL;
-    vs |> List.iteri ~f:(fun i v ->
-        if i > 0 then begin
-          putsp ()
-        end;
-        write buf v
-      );
-    putsp ();
-    putt `Dot;
-    putsp ();
-    write buf (t :> t);
-    putt `Close
-
-let write_to_string t =
-  let buf = Buffer.create 128 in
-  write buf t;
-  Buffer.contents buf
