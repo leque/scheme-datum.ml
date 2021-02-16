@@ -674,16 +674,18 @@ and parse0 ?(left : atomosphere list = []) tokenize : (ss, _) Result.t =
     end
   | { value = `OpenV; start; _ } ->
     begin match%bind list ~what:"vector" ~allows_dot:false ~start [] tokenize with
-      | _, Some _, end_ ->
-        fail_parse_error ~start ~end_ "invalid dotted-tail for vector"
+      | _, Some _, _end_ ->
+        (* ~allows_dot:false *)
+        assert false
       | vs, None, end_ ->
         let value = `Vector (Array.of_list vs) in
         return { With_position.value; start; end_ }
     end
   | { value = `OpenBv; start; _ } ->
     begin match%bind list ~what:"bytevector" ~allows_dot:false ~start [] tokenize with
-      | _, Some _, end_ ->
-        fail_parse_error ~start ~end_ "invalid dotted-tail for bytevector"
+      | _, Some _, _end_ ->
+        (* ~allows_dot:false *)
+        assert false
       | vs, None, end_ ->
         list_to_bytevector ~start ~end_ vs
     end
