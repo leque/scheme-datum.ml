@@ -765,23 +765,25 @@ let read_token lexbuf : (token With_position.t, _) Result.t =
 type 'a tokenizer = unit -> (token With_position.t, 'a) Result.t
 
 let parse_bytevector_element (v : t_with_position) =
-  let f ~start ~end_ s =
+  let f ~start ~end_ v s =
     match Char.of_int @@ Int.of_string s with
     | Some v -> Result.return v
-    | None -> fail_parse_errorf ~start ~end_ "integer out of byte range: %s" s
-    | exception Failure _ -> fail_parse_errorf ~start ~end_ "integer out of byte range: %s" s
+    | None ->
+      fail_parse_errorf ~start ~end_ "integer out of byte range: %s" (write_to_string @@ strip v)
+    | exception Failure _ ->
+      fail_parse_errorf ~start ~end_ "integer out of byte range: %s" (write_to_string @@ strip v)
   in
   match v with
   | { With_position.value = `Integer2 s; start; end_ } ->
-    f ~start ~end_ ("0b" ^ s)
+    f ~start ~end_ v ("0b" ^ s)
   | { value = `Integer8 s; start; end_ } ->
-    f ~start ~end_ ("0o" ^ s)
+    f ~start ~end_ v ("0o" ^ s)
   | { value = `Integer10 s; start; end_ } ->
-    f ~start ~end_ s
+    f ~start ~end_ v s
   | { value = `Integer16 s; start; end_ } ->
-    f ~start ~end_ ("0x" ^ s)
+    f ~start ~end_ v ("0x" ^ s)
   | { value = _; start; end_ } ->
-    fail_parse_error ~start ~end_ "not a byte"
+    fail_parse_errorf ~start ~end_ "not a byte: %s" (write_to_string @@ strip v)
 
 let list_to_bytevector ~start ~end_ vs =
   let open Result.Let_syntax in
@@ -900,8 +902,10 @@ and list ~what ~start ~allows_dot elems ?tail tokenize =
     end
   | { value = #positioned; start; end_ } as v ->
     begin match tail with
-      | Some _ ->
-        fail_parse_error ~start ~end_ "multiple elements after dot"
+      | Some tl ->
+        fail_parse_errorf ~start ~end_ "multiple elements after dot: %s %s"
+          (write_to_string @@ strip tl)
+          (write_to_string @@ strip v)
       | None ->
         list ~what ~allows_dot ~start (v :: elems) ?tail tokenize
     end

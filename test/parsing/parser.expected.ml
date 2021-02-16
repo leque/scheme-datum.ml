@@ -29,8 +29,12 @@
              (* list.scm:5.5-6 *))
 `ParseError ("extra close parenthesis"
              (* list.scm:6.5-6 *))
+`ParseError ("multiple elements after dot: 2 3"
+             (* list.scm:7.8-9 *))
+`ParseError ("extra close parenthesis"
+             (* list.scm:7.9-10 *))
 `ParseError ("unclosed list"
-             (* list.scm:7.2-8.1 *))
+             (* list.scm:8.2-9.1 *))
 
 (* vector.scm *)
 `ParseError ("vector cannot contain `.'"
@@ -52,9 +56,9 @@
 
 (* bytevector.scm *)
 `Bytevector ("\001")
-`ParseError ("integer out of byte range: 0x100"
+`ParseError ("integer out of byte range: #x100"
              (* bytevector.scm:2.5-10 *))
-`ParseError ("not a byte"
+`ParseError ("not a byte: a"
              (* bytevector.scm:3.5-6 *))
 `ParseError ("bytevector cannot contain `.'"
              (* bytevector.scm:4.5-6 *))
