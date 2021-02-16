@@ -3,6 +3,8 @@
  (deps
    "test.scm"
    "list.scm"
+   "vector.scm"
+   "bytevector.scm"
  )
  (action
   (with-stdout-to parser.output (run ./test.exe %{deps}))))
