@@ -33,8 +33,16 @@
              (* list.scm:7.8-9 *))
 `ParseError ("extra close parenthesis"
              (* list.scm:7.9-10 *))
+`ParseError ("bare ."
+             (* list.scm:8.6-7 *))
+`ParseError ("extra close parenthesis"
+             (* list.scm:8.7-8 *))
+`ParseError ("multiple dots"
+             (* list.scm:9.8-9 *))
+`ParseError ("extra close parenthesis"
+             (* list.scm:9.9-10 *))
 `ParseError ("unclosed list"
-             (* list.scm:8.2-9.1 *))
+             (* list.scm:10.2-11.1 *))
 
 (* vector.scm *)
 `ParseError ("vector cannot contain `.'"
