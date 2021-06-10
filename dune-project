@@ -13,8 +13,8 @@
  (version "~dev")
  (synopsis "A subset of R7RS Scheme parser")
  (depends
-  (ocaml (and (>= 4.07.0) (< 4.12.0)))
-  (dune (and :build (>= 2.5) (< 2.8)))
+  (ocaml (and (>= 4.07.0) (< 4.13.0)))
+  (dune (and :build (>= 2.5) (< 2.9)))
   (base (and (>= v0.14) (< v0.15)))
   (stdio (and :with-test (>= v0.14) (< v0.15)))
   ppx_deriving
