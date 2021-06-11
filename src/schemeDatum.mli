@@ -15,19 +15,36 @@ end
 
 type lexeme_datum =
     [ `Boolean of bool
-    (** #t -> [`Boolean true], #f -> [`Boolean false] *)
+    (**
+       [#t] → [`Boolean true],
+       [#f] → [`Boolean false]
+     *)
     | `Char of Uchar.t
-    (** #\a -> [`Char U+0041], #\x0020 -> [`Char U+0020] *)
+    (**
+       [#\a] → [`Char U+0041],
+       [#\x0020] → [`Char U+0020]
+     *)
     | `Integer2 of string
-    (** #b001 -> [`Integer2 "001"] *)
+    (**
+       [#b001] → [`Integer2 "001"]
+     *)
     | `Integer8 of string
-    (** #o644 -> [`Integer2 "644"] *)
+    (**
+       [#o644] → [`Integer8 "644"]
+     *)
     | `Integer10 of string
-    (** 1024 -> [`Integer10 "1024"], #d4096 -> [`Integer10 "4096"] *)
+    (**
+       [1024] → [`Integer10 "1024"],
+       [#d4096] → [`Integer10 "4096"]
+     *)
     | `Integer16 of string
-    (** #xdeadbeef -> [`Integer16 "deadbeef"] *)
+    (**
+       [#xdeadbeef] → [`Integer16 "deadbeef"]
+     *)
     | `Number of string
-    (** 3.14e0 -> [`Number "3.14e0"] *)
+    (**
+       [3.14e0] → [`Number "3.14e0"]
+     *)
     | `String of string
     | `Symbol of string
     ]
@@ -40,32 +57,32 @@ type token =
     (** end of file *)
     | `NamedChar of string
     (**
-       #\space -> [`NamedChar "space"],
-       #\Backspace -> [`NamedChar "Backspace"] *)
+       [#\space] → [`NamedChar "space"],
+       [#\Backspace] → [`NamedChar "Backspace"] *)
     | `BlockComment of string
-    (** #|...|# -> [`BlockComment "..."] *)
+    (** [#|...|#] → [`BlockComment "..."] *)
     | `DatumComment
-    (** #; *)
+    (** [#;] *)
     | `LineComment of string
-    (** ;... -> [`LineComment "..."] *)
+    (** [;...] → [`LineComment "..."] *)
     | `Dot
-    (** . *)
+    (** [.] *)
     | `OpenBv
-    (** #u8( *)
+    (** [#u8(] *)
     | `OpenL
-    (** ( *)
+    (** [(] *)
     | `OpenV
-    (** #( *)
+    (** [#(] *)
     | `Close
-    (** ) *)
+    (** [)] *)
     | `Quasiquote
-    (** ` *)
+    (** [`] *)
     | `Quote
-    (** ' *)
+    (** ['] *)
     | `Unquote
-    (** , *)
+    (** [,] *)
     | `UnquoteSplicing
-    (** ,@ *)
+    (** [,@] *)
     | `Whitespace of string
     ]
 
