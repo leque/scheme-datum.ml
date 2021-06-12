@@ -798,9 +798,9 @@ let rec parse_tokens ~left (tokenize : _ tokenizer) =
   let open Result.Let_syntax in
   match%bind parse0 ~left tokenize with
   | { value = `Close; start; end_ } ->
-    fail_parse_error ~start ~end_ "extra close parenthesis"
+    fail_parse_error ~start ~end_ "unexpected close parenthesis"
   | { value = `Dot; start; end_ } ->
-    fail_parse_error ~start ~end_ "bare ."
+    fail_parse_error ~start ~end_ "unexpected dot"
   | { With_position.value = `Eof; start; end_ } ->
     fail_eof ~start ~end_ "eof"
   | { value = #positioned; _ } as x ->
@@ -891,14 +891,16 @@ and list ~what ~start ~allows_dot elems ?tail tokenize =
       | true, [], None ->
         fail_parse_error ~start ~end_ "unexpected dot"
       | true, (_::_), None ->
-        let%bind tail =
-          parse_tokens ~left:[] tokenize
-          |> Result.map_error ~f:(function
-              | `Eof { With_position.start; end_; _ } ->
-                make_parse_errorf ~start ~end_ "unclosed %s" what
-              | v -> v)
-        in
-        list ~what ~allows_dot ~start elems ~tail tokenize
+        begin match%bind parse0 ~left:[] tokenize with
+         | { value = `Eof; start; end_ } ->
+             fail_parse_errorf ~start ~end_ "unclosed %s" what
+         | { value = `Close; start; end_ } ->
+             fail_parse_errorf ~start ~end_ "unexpected close parenthesis"
+         | { value = `Dot; start; end_ } ->
+             fail_parse_errorf ~start ~end_ "multiple dots"
+         | { value = #positioned; start = _; end_ = _ } as tail ->
+             list ~what ~allows_dot ~start elems ~tail tokenize
+        end
     end
   | { value = #positioned; start; end_ } as v ->
     begin match tail with
